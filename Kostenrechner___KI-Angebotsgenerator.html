@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<html lang="de" class="h-full bg-slate-900 text-slate-100">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CraftCalc Pro - KI-Kostenrechner & Angebotserstellung</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Lucide Icons CDN -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Google Fonts: Inter -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              50: '#fffbebe',
+              100: '#fef3c7',
+              500: '#f59e0b',
+              600: '#d97706',
+              700: '#b45309',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    /* Custom Scrollbar for sleek UI */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #0f172a;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #334155;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #475569;
+    }
+    @media print {
+      body * {
+        visibility: hidden;
+      }
+      #print-area, #print-area * {
+        visibility: visible;
+      }
+      #print-area {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        color: #000 !important;
+        background: #fff !important;
+      }
+      .no-print {
+        display: none !important;
+      }
+    }
+  </style>
+</head>
+<body class="h-full flex flex-col font-sans bg-slate-950 text-slate-100 antialiased selection:bg-amber-500 selection:text-slate-950">
+
+  <header class="no-print border-b border-slate-800 bg-slate-900/80 backdrop-blur sticky top-0 z-40">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex items-center justify-between h-16">
+        <!-- Logo -->
+        <div class="flex items-center gap-3">
+          <div class="p-2 bg-gradient-to-tr from-amber-500 to-amber-600 rounded-xl shadow-lg shadow-amber-500/20 text-slate-950 font-bold">
+            <i data-lucide="calculator" class="w-6 h-6"></i>
+          </div>
+          <div>
+            <span class="text-xl font-bold tracking-tight text-white flex items-center gap-2">
+              CraftCalc <span class="text-xs bg-amber-500/20 text-amber-400 border border-amber-500/30 px-2 py-0.5 rounded-full font-mono font-semibold">PRO</span>
+            </span>
+            <p class="text-xs text-slate-400 hidden sm:block">Professionelle Handwerker-Kalkulation & KI-Angebote</p>
+          </div>
+        </div>
+
+        <!-- Right Side Actions & Pro Badge -->
+        <div class="flex items-center gap-3">
+          <div id="proStatusBadge" class="hidden sm:flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-slate-800 border border-slate-700 text-slate-300">
+            <span id="proBadgeDot" class="w-2 h-2 rounded-full bg-slate-500"></span>
+            <span id="proBadgeText">Basis-Lizenz</span>
+          </div>
+          <button onclick="openProModal()" id="upgradeHeaderBtn" class="flex items-center gap-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-slate-950 font-semibold px-4 py-2 rounded-xl text-sm transition-all shadow-md shadow-amber-500/20 active:scale-95">
+            <i data-lucide="zap" class="w-4 h-4 fill-current"></i>
+            <span>PRO Freischalten</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 gap-6 grid grid-cols-1 lg:grid-cols-12 no-print">
+
+    <!-- LEFT COLUMN: Inputs & Controls (7 Cols) -->
+    <section class="lg:col-span-7 space-y-6">
+
+      <!-- Gewerke Selection -->
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl">
+        <h2 class="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+          <i data-lucide="briefcase" class="w-4 h-4 text-amber-500"></i> Gewerke & Dienstleistung wählen
+        </h2>
+        <div class="grid grid-cols-2 sm:grid-cols-3 gap-2.5" id="gewerkeGrid">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+
+      <!-- KI Assistant Card -->
+      <div class="bg-gradient-to-br from-slate-900 via-slate-900 to-slate-800/80 border border-amber-500/30 rounded-2xl p-5 shadow-xl relative overflow-hidden group">
+        <div class="absolute -right-10 -bottom-10 w-40 h-40 bg-amber-500/5 rounded-full blur-3xl pointer-events-none"></div>
+        <div class="flex items-center justify-between mb-3">
+          <h2 class="text-sm font-semibold text-amber-400 uppercase tracking-wider flex items-center gap-2">
+            <i data-lucide="sparkles" class="w-4 h-4 text-amber-400"></i> KI-Angebotsgenerator & Stundenschätzer
+          </h2>
+          <span class="text-xs text-slate-400 font-mono">Gemini 3.1 Powered</span>
+        </div>
+        <p class="text-xs text-slate-400 mb-3">Beschreibe das Projekt in eigenen Worten. Die KI berechnet Stunden, Materialaufwand & formuliert das Angebot.</p>
+        
+        <div class="space-y-3">
+          <textarea id="aiPromptInput" rows="3" placeholder="Z. B.: Pflastern einer Einfahrt von ca. 60m² mit Rechteckpflaster grau, inklusive Unterbau aus Schotter und Entsorgung des Aushubs in Münster..." class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition-all"></textarea>
+          
+          <div class="flex items-center justify-between">
+            <div class="text-xs text-slate-500">
+              <span id="aiUsageHint" class="hidden sm:inline">PRO-Feature: Automatische Kalkulation</span>
+            </div>
+            <button onclick="generateAiProposal()" id="aiGenerateBtn" class="flex items-center gap-2 bg-amber-500 hover:bg-amber-600 text-slate-950 font-semibold px-4 py-2 rounded-xl text-sm transition-all shadow-lg shadow-amber-500/20 active:scale-95 disabled:opacity-50">
+              <i data-lucide="wand-2" class="w-4 h-4"></i>
+              <span id="aiBtnText">KI-Kalkulation ausführen</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Manual Calculator Inputs -->
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl space-y-4">
+        <h2 class="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-2">
+          <i data-lucide="sliders" class="w-4 h-4 text-amber-500"></i> Manuelle Parameter Anpassen
+        </h2>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <!-- Fläche / Umfang -->
+          <div>
+            <label class="block text-xs font-medium text-slate-400 mb-1">Fläche / Umfang (<span id="unitLabel">m²</span>)</label>
+            <div class="relative">
+              <input type="number" id="inputQuantity" value="45" min="0" step="1" oninput="calculateTotal()" class="w-full bg-slate-950 border border-slate-800 rounded-xl py-2.5 px-3 text-slate-100 text-sm focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition-all">
+              <span class="absolute right-3 top-2.5 text-xs text-slate-500 font-mono" id="unitBadge">m²</span>
+            </div>
+          </div>
+
+          <!-- Stundensatz -->
+          <div>
+            <label class="block text-xs font-medium text-slate-400 mb-1">Stundensatz (€ / Std. netto)</label>
+            <div class="relative">
+              <input type="number" id="inputHourlyRate" value="65" min="0" step="5" oninput="calculateTotal()" class="w-full bg-slate-950 border border-slate-800 rounded-xl py-2.5 px-3 text-slate-100 text-sm focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition-all">
+              <span class="absolute right-3 top-2.5 text-xs text-slate-500 font-mono">€/h</span>
+            </div>
+          </div>
+
+          <!-- Geschätzte Arbeitsstunden -->
+          <div>
+            <label class="block text-xs font-medium text-slate-400 mb-1">Geschätzte Arbeitsstunden</label>
+            <div class="relative">
+              <input type="number" id="inputHours" value="16" min="0" step="0.5" oninput="calculateTotal()" class="w-full bg-slate-950 border border-slate-800 rounded-xl py-2.5 px-3 text-slate-100 text-sm focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition-all">
+              <span class="absolute right-3 top-2.5 text-xs text-slate-500 font-mono">Std</span>
+            </div>
+          </div>
+
+          <!-- Materialkosten netto -->
+          <div>
+            <label class="block text-xs font-medium text-slate-400 mb-1">Materialkosten pauschal (€ netto)</label>
+            <div class="relative">
+              <input type="number" id="inputMaterial" value="850" min="0" step="10" oninput="calculateTotal()" class="w-full bg-slate-950 border border-slate-800 rounded-xl py-2.5 px-3 text-slate-100 text-sm focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition-all">
+              <span class="absolute right-3 top-2.5 text-xs text-slate-500 font-mono">€</span>
+            </div>
+          </div>
+
+          <!-- Anfahrtskosten netto -->
+          <div>
+            <label class="block text-xs font-medium text-slate-400 mb-1">Anfahrts- / Einrichtungspauschale (€)</label>
+            <div class="relative">
+              <input type="number" id="inputTravel" value="49" min="0" step="5" oninput="calculateTotal()" class="w-full bg-slate-950 border border-slate-800 rounded-xl py-2.5 px-3 text-slate-100 text-sm focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition-all">
+              <span class="absolute right-3 top-2.5 text-xs text-slate-500 font-mono">€</span>
+            </div>
+          </div>
+
+          <!-- MwSt. Satz -->
+          <div>
+            <label class="block text-xs font-medium text-slate-400 mb-1">Mehrwertsteuer</label>
+            <select id="inputVatRate" onchange="calculateTotal()" class="w-full bg-slate-950 border border-slate-800 rounded-xl py-2.5 px-3 text-slate-100 text-sm focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition-all">
+              <option value="19" selected>19 % (Standard)</option>
+              <option value="7">7 % (Ermäßigt)</option>
+              <option value="0">0 % (Kleinunternehmer §19)</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Firmendaten & Kunde Formular -->
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl space-y-4">
+        <div class="flex items-center justify-between">
+          <h2 class="text-sm font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-2">
+            <i data-lucide="building-2" class="w-4 h-4 text-amber-500"></i> Angebotsempfänger & Firmendaten
+          </h2>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-medium text-slate-400 mb-1">Deine Firma / Handwerker</label>
+            <input type="text" id="compName" value="Meisterbetriebe Schmidt & Co." class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs text-slate-200">
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-slate-400 mb-1">Kundenname</label>
+            <input type="text" id="custName" value="Max Mustermann" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs text-slate-200">
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-slate-400 mb-1">Kunden-Adresse / Ausführungsort</label>
+            <input type="text" id="custAddr" value="Musterstraße 12, 48143 Münster" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs text-slate-200">
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-slate-400 mb-1">Angebots-Nummer</label>
+            <input type="text" id="quoteNum" value="ANG-2026-108" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs text-slate-200">
+          </div>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- RIGHT COLUMN: Live Summary & Proposal Preview (5 Cols) -->
+    <section class="lg:col-span-5 space-y-6">
+
+      <!-- Live Price Overview Card -->
+      <div class="bg-gradient-to-br from-slate-900 to-slate-950 border border-slate-800 rounded-2xl p-6 shadow-2xl sticky top-20">
+        <h2 class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-4 flex items-center justify-between">
+          <span>Kostenaufschlüsselung</span>
+          <span id="liveGewerkTag" class="text-amber-400 font-mono text-[11px] bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-500/20">Gartenbau</span>
+        </h2>
+
+        <!-- Items breakdown list -->
+        <div class="space-y-3 border-b border-slate-800 pb-4 mb-4 text-sm">
+          <div class="flex justify-between text-slate-300">
+            <span class="flex items-center gap-1.5"><i data-lucide="clock" class="w-3.5 h-3.5 text-slate-500"></i> Arbeitslohn (<span id="sumHours">16</span>h × <span id="sumRate">65</span>€)</span>
+            <span class="font-mono font-medium" id="sumLaborCost">1.040,00 €</span>
+          </div>
+          <div class="flex justify-between text-slate-300">
+            <span class="flex items-center gap-1.5"><i data-lucide="package" class="w-3.5 h-3.5 text-slate-500"></i> Material pauschal</span>
+            <span class="font-mono font-medium" id="sumMaterialCost">850,00 €</span>
+          </div>
+          <div class="flex justify-between text-slate-300">
+            <span class="flex items-center gap-1.5"><i data-lucide="truck" class="w-3.5 h-3.5 text-slate-500"></i> Anfahrt & Rüstzeit</span>
+            <span class="font-mono font-medium" id="sumTravelCost">49,00 €</span>
+          </div>
+        </div>
+
+        <!-- Net / Vat / Gross Summary -->
+        <div class="space-y-2 mb-6">
+          <div class="flex justify-between text-slate-400 text-sm">
+            <span>Zwischensumme (Netto)</span>
+            <span class="font-mono font-medium text-slate-200" id="totalNet">1.939,00 €</span>
+          </div>
+          <div class="flex justify-between text-slate-400 text-sm">
+            <span>MwSt. (<span id="sumVatPercent">19</span>%)</span>
+            <span class="font-mono font-medium text-slate-300" id="totalVat">368,41 €</span>
+          </div>
+          <div class="flex justify-between text-xl font-bold text-white pt-2 border-t border-slate-800">
+            <span class="text-amber-400">Gesamtbetrag</span>
+            <span class="font-mono text-amber-400" id="totalGross">2.307,41 €</span>
+          </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="grid grid-cols-2 gap-3">
+          <button onclick="triggerPrint()" class="flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-700 text-white font-medium py-2.5 px-4 rounded-xl text-sm transition-all border border-slate-700 active:scale-95">
+            <i data-lucide="printer" class="w-4 h-4"></i>
+            <span>Drucken / PDF</span>
+          </button>
+          <button onclick="copyOfferText()" class="flex items-center justify-center gap-2 bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/30 font-medium py-2.5 px-4 rounded-xl text-sm transition-all active:scale-95">
+            <i data-lucide="copy" class="w-4 h-4"></i>
+            <span>Text Kopieren</span>
+          </button>
+        </div>
+
+        <!-- Generated Text Draft -->
+        <div class="mt-6">
+          <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+            <i data-lucide="file-text" class="w-3.5 h-3.5 text-amber-400"></i> Angebotstext Vorschau / Entwurf
+          </label>
+          <textarea id="offerTextPreview" rows="8" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-slate-300 font-mono leading-relaxed focus:outline-none focus:border-amber-500"></textarea>
+        </div>
+
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- HIDDEN PRINT AREA (Only visible when printing) -->
+  <div id="print-area" class="hidden print:block p-10 max-w-4xl mx-auto bg-white text-slate-900 font-sans">
+    <div class="flex justify-between items-start border-b border-slate-200 pb-6 mb-6">
+      <div>
+        <h1 class="text-2xl font-bold text-slate-900" id="printCompName">Meisterbetrieb Schmidt & Co.</h1>
+        <p class="text-xs text-slate-500 mt-1">Ihr Fachpartner für Gartenbau, Zaunbau & Instandhaltung</p>
+      </div>
+      <div class="text-right">
+        <h2 class="text-xl font-bold text-amber-600">ANGEBOT</h2>
+        <p class="text-xs text-slate-500 mt-1">Nr.: <span id="printQuoteNum">ANG-2026-108</span></p>
+        <p class="text-xs text-slate-500">Datum: <span id="printDate">--.--.----</span></p>
+      </div>
+    </div>
+
+    <div class="mb-8">
+      <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Empfänger:</p>
+      <p class="text-sm font-semibold text-slate-800 mt-1" id="printCustName">Max Mustermann</p>
+      <p class="text-xs text-slate-600" id="printCustAddr">Musterstraße 12, 48143 Münster</p>
+    </div>
+
+    <div class="mb-6">
+      <h3 class="text-sm font-bold text-slate-800 mb-2">Projektbeschreibende Angaben & Positionen:</h3>
+      <table class="w-full text-xs text-left border-collapse">
+        <thead>
+          <tr class="border-b-2 border-slate-800 text-slate-700">
+            <th class="py-2">Pos.</th>
+            <th class="py-2">Beschreibung</th>
+            <th class="py-2 text-right">Betrag (Netto)</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-200">
+          <tr>
+            <td class="py-2 font-mono">1</td>
+            <td class="py-2">
+              <span class="font-semibold block" id="printGewerkTitle">Gartenbau Arbeiten</span>
+              <span class="text-slate-500 text-[11px]" id="printLaborDesc">16 Arbeitsstunden inkl. Facharbeiter-Einsatz</span>
+            </td>
+            <td class="py-2 text-right font-mono" id="printLaborVal">1.040,00 €</td>
+          </tr>
+          <tr>
+            <td class="py-2 font-mono">2</td>
+            <td class="py-2">Materialaufwand & Verbrauchsmaterialien pauschal</td>
+            <td class="py-2 text-right font-mono" id="printMaterialVal">850,00 €</td>
+          </tr>
+          <tr>
+            <td class="py-2 font-mono">3</td>
+            <td class="py-2">Anfahrt, Einrichtung der Baustelle & Entsorgungspauschale</td>
+            <td class="py-2 text-right font-mono" id="printTravelVal">49,00 €</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- AI Detailed breakdown note if present -->
+    <div id="printAiSection" class="mb-6 p-3 bg-slate-50 rounded border border-slate-200 text-xs">
+      <p class="font-semibold text-slate-700 mb-1">Detaillierter Leistungsumfang (KI-Entwurf):</p>
+      <p id="printAiDetailsText" class="text-slate-600 whitespace-pre-line text-[11px]">Kalkulation nach vereinbarten Projektspezifikationen.</p>
+    </div>
+
+    <!-- Totals Table -->
+    <div class="flex justify-end mb-10">
+      <div class="w-64 space-y-1 text-xs">
+        <div class="flex justify-between text-slate-600">
+          <span>Gesamt Netto:</span>
+          <span class="font-mono font-medium" id="printTotalNet">1.939,00 €</span>
+        </div>
+        <div class="flex justify-between text-slate-600">
+          <span>MwSt (<span id="printVatPercent">19</span>%):</span>
+          <span class="font-mono font-medium" id="printTotalVat">368,41 €</span>
+        </div>
+        <div class="flex justify-between text-sm font-bold text-slate-900 pt-2 border-t border-slate-300">
+          <span>Endbetrag (Brutto):</span>
+          <span class="font-mono text-amber-700" id="printTotalGross">2.307,41 €</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="border-t border-slate-200 pt-4 text-[10px] text-slate-500 flex justify-between">
+      <p>Zahlbar innerhalb von 14 Tagen ohne Abzug. Es gelten unsere AGB.</p>
+      <p>Erstellt mit CraftCalc PRO</p>
+    </div>
+  </div>
+
+  <!-- PRO UPGRADE MODAL -->
+  <div id="proModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl relative">
+      <button onclick="closeProModal()" class="absolute right-4 top-4 text-slate-500 hover:text-white">
+        <i data-lucide="x" class="w-5 h-5"></i>
+      </button>
+
+      <div class="text-center mb-6">
+        <div class="w-12 h-12 bg-amber-500/10 border border-amber-500/30 rounded-2xl flex items-center justify-center text-amber-400 mx-auto mb-3">
+          <i data-lucide="zap" class="w-6 h-6"></i>
+        </div>
+        <h3 class="text-xl font-bold text-white">CraftCalc PRO Freischalten</h3>
+        <p class="text-xs text-slate-400 mt-1">Sichere dir unbegrenzte KI-Angebotsgenerierungen & professionelle Export-Funktionen.</p>
+      </div>
+
+      <div class="space-y-3 mb-6 text-sm text-slate-300">
+        <div class="flex items-center gap-2">
+          <i data-lucide="check-circle2" class="w-4 h-4 text-emerald-400"></i>
+          <span>Unbegrenzte KI-Projektanalyse & Stundenrechner</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <i data-lucide="check-circle2" class="w-4 h-4 text-emerald-400"></i>
+          <span>Eigene Firmendaten auf allen PDF-Angebotsdrucken</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <i data-lucide="check-circle2" class="w-4 h-4 text-emerald-400"></i>
+          <span>Speichern & Verwalten beliebig vieler Angebote</span>
+        </div>
+      </div>
+
+      <!-- Demo Stripe Checkout Simulation -->
+      <div class="space-y-3">
+        <button onclick="simulateStripeCheckout()" class="w-full bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-slate-950 font-bold py-3 rounded-xl text-sm transition-all shadow-lg shadow-amber-500/20">
+          Jetzt Abonnieren (19,99 € / Monat)
+        </button>
+
+        <!-- Demo Key unlock option -->
+        <div class="pt-3 border-t border-slate-800">
+          <p class="text-xs text-slate-400 mb-2 text-center">Oder Demo-Freischaltcode eingeben (Test-Key: <code class="text-amber-400 font-mono">PRO2026</code>)</p>
+          <div class="flex gap-2">
+            <input type="text" id="promoCodeInput" placeholder="PRO2026" class="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs font-mono uppercase text-white focus:outline-none focus:border-amber-500">
+            <button onclick="applyPromoCode()" class="bg-slate-800 hover:bg-slate-700 text-white font-medium px-4 py-2 rounded-xl text-xs transition-all">
+              Aktivieren
+            </button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Toast Message Notification Container -->
+  <div id="toastContainer" class="fixed bottom-5 right-5 z-50 space-y-2 pointer-events-none"></div>
+
+  <script>
+    // Global State
+    const state = {
+      isPro: false,
+      selectedGewerk: 'gartenbau',
+      vatRate: 19,
+      aiAnalysis: null,
+      apiWorking: false
+    };
+
+    // Gewerke Configuration Pre-sets
+    const gewerkeData = [
+      { id: 'gartenbau', name: 'Garten- & Pflasterbau', icon: 'trees', defaultRate: 60, defaultHours: 16, defaultMat: 850, unit: 'm²' },
+      { id: 'zaunbau', name: 'Zaunbau & Gehege', icon: 'shield-check', defaultRate: 58, defaultHours: 10, defaultMat: 620, unit: 'm' },
+      { id: 'reinigung', name: 'Reinigung & Objekt', icon: 'sparkles', defaultRate: 38, defaultHours: 8, defaultMat: 90, unit: 'm²' },
+      { id: 'security', name: 'Sicherheitsdienst', icon: 'lock', defaultRate: 48, defaultHours: 12, defaultMat: 0, unit: 'Std' },
+      { id: 'reparatur', name: 'Allg. Reparaturen', icon: 'wrench', defaultRate: 65, defaultHours: 4, defaultMat: 150, unit: 'Stk' },
+      { id: 'maler', name: 'Maler- & Anstrich', icon: 'paint-bucket', defaultRate: 52, defaultHours: 14, defaultMat: 320, unit: 'm²' }
+    ];
+
+    // Initialize App
+    window.onload = function() {
+      renderGewerke();
+      selectGewerk('gartenbau');
+      updateProStatusUI();
+      lucide.createIcons();
+      document.getElementById('printDate').innerText = new Date().toLocaleDateString('de-DE');
+    };
+
+    // Render Gewerke Selection Grid
+    function renderGewerke() {
+      const container = document.getElementById('gewerkeGrid');
+      container.innerHTML = gewerkeData.map(g => `
+        <button onclick="selectGewerk('${g.id}')" id="gewerk-btn-${g.id}" class="flex items-center gap-2 p-2.5 rounded-xl border border-slate-800 bg-slate-950/60 hover:bg-slate-800 transition-all text-left group">
+          <div class="p-2 rounded-lg bg-slate-900 border border-slate-800 group-hover:border-amber-500/40 text-amber-500">
+            <i data-lucide="${g.icon}" class="w-4 h-4"></i>
+          </div>
+          <span class="text-xs font-medium text-slate-300 group-hover:text-white leading-tight">${g.name}</span>
+        </button>
+      `).join('');
+      lucide.createIcons();
+    }
+
+    // Select Gewerk & Apply Presets
+    function selectGewerk(id) {
+      state.selectedGewerk = id;
+      const g = gewerkeData.find(item => item.id === id);
+      if (!g) return;
+
+      // Update UI Highlights
+      gewerkeData.forEach(item => {
+        const btn = document.getElementById(`gewerk-btn-${item.id}`);
+        if (btn) {
+          if (item.id === id) {
+            btn.className = "flex items-center gap-2 p-2.5 rounded-xl border border-amber-500/50 bg-amber-500/10 text-white transition-all shadow-md shadow-amber-500/5";
+          } else {
+            btn.className = "flex items-center gap-2 p-2.5 rounded-xl border border-slate-800 bg-slate-950/60 hover:bg-slate-800 transition-all text-left text-slate-400";
+          }
+        }
+      });
+
+      // Set input defaults
+      document.getElementById('inputHourlyRate').value = g.defaultRate;
+      document.getElementById('inputHours').value = g.defaultHours;
+      document.getElementById('inputMaterial').value = g.defaultMat;
+      document.getElementById('unitLabel').innerText = g.unit;
+      document.getElementById('unitBadge').innerText = g.unit;
+      document.getElementById('liveGewerkTag').innerText = g.name;
+
+      calculateTotal();
+    }
+
+    function calculateTotal() {
+      const hours = parseFloat(document.getElementById('inputHours').value) || 0;
+      const rate = parseFloat(document.getElementById('inputHourlyRate').value) || 0;
+      const material = parseFloat(document.getElementById('inputMaterial').value) || 0;
+      const travel = parseFloat(document.getElementById('inputTravel').value) || 0;
+      const vatRate = parseFloat(document.getElementById('inputVatRate').value) || 0;
+
+      const laborCost = hours * rate;
+      const netTotal = laborCost + material + travel;
+      const vatAmount = netTotal * (vatRate / 100);
+      const grossTotal = netTotal + vatAmount;
+
+      // Update Summary Cards
+      document.getElementById('sumHours').innerText = hours;
+      document.getElementById('sumRate').innerText = rate;
+      document.getElementById('sumLaborCost').innerText = formatCurrency(laborCost);
+      document.getElementById('sumMaterialCost').innerText = formatCurrency(material);
+      document.getElementById('sumTravelCost').innerText = formatCurrency(travel);
+
+      document.getElementById('totalNet').innerText = formatCurrency(netTotal);
+      document.getElementById('sumVatPercent').innerText = vatRate;
+      document.getElementById('totalVat').innerText = formatCurrency(vatAmount);
+      document.getElementById('totalGross').innerText = formatCurrency(grossTotal);
+
+      // Update Print elements
+      document.getElementById('printLaborVal').innerText = formatCurrency(laborCost);
+      document.getElementById('printMaterialVal').innerText = formatCurrency(material);
+      document.getElementById('printTravelVal').innerText = formatCurrency(travel);
+      document.getElementById('printTotalNet').innerText = formatCurrency(netTotal);
+      document.getElementById('printVatPercent').innerText = vatRate;
+      document.getElementById('printTotalVat').innerText = formatCurrency(vatAmount);
+      document.getElementById('printTotalGross').innerText = formatCurrency(grossTotal);
+      document.getElementById('printLaborDesc').innerText = `${hours} Arbeitsstunden x ${rate} €/h netto`;
+
+      updateOfferDraftText(netTotal, vatAmount, grossTotal);
+    }
+
+    function formatCurrency(val) {
+      return new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(val);
+    }
+
+    // Generate Standard Offer Draft Text
+    function updateOfferDraftText(net, vat, gross) {
+      const comp = document.getElementById('compName').value;
+      const cust = document.getElementById('custName').value;
+      const gewerkName = gewerkeData.find(g => g.id === state.selectedGewerk)?.name || 'Dienstleistungen';
+      const hours = document.getElementById('inputHours').value;
+
+      let draft = `Sehr geehrte(r) Frau/Herr ${cust},\n\nvielen Dank für Ihre Anfrage. Hiermit unterbreiten wir Ihnen folgendes Angebot für die Ausführung der Arbeiten im Bereich ${gewerkName}:\n\n`;
+      draft += `- Facharbeitsaufwand: ca. ${hours} Stunden\n`;
+      draft += `- Material- & Verbrauchsmittelbereitstellung inklusive\n`;
+      draft += `- Anfahrt & Baustelleneinrichtung enthalten\n\n`;
+      draft += `Gesamtsumme Netto: ${formatCurrency(net)}\n`;
+      draft += `zzgl. MwSt.: ${formatCurrency(vat)}\n`;
+      draft += `Gesamtbetrag Brutto: ${formatCurrency(gross)}\n\n`;
+      draft += `Wir freuen uns auf Ihre Rückmeldung.\nMit freundlichen Grüßen\n${comp}`;
+
+      if (!state.aiAnalysis) {
+        document.getElementById('offerTextPreview').value = draft;
+      }
+    }
+
+    async function generateAiProposal() {
+      const promptText = document.getElementById('aiPromptInput').value.trim();
+      if (!promptText) {
+        showToast("Bitte gib zuerst eine Projektbeschreibung ein.", "error");
+        return;
+      }
+
+      const btn = document.getElementById('aiGenerateBtn');
+      const btnText = document.getElementById('aiBtnText');
+      btn.disabled = true;
+      btnText.innerText = "KI berechnet...";
+
+      const systemPrompt = `Du bist ein erfahrener Handwerks-Kalkulator. Analysiere das Projekt und gib eine strukturierte Kalkulation im JSON-Format zurück.
+Antworte AUSSCHLIESSLICH mit reinem JSON ohne Markdown-Codeblöcke!
+JSON Schema:
+{
+  "estimatedHours": number,
+  "suggestedHourlyRate": number,
+  "estimatedMaterialCost": number,
+  "recommendedTravelCost": number,
+  "projectSummary": "string",
+  "detailedProposalText": "string"
+}`;
+
+      const userQuery = `Kalkuliere folgendes Handwerker/Dienstleistungs-Projekt: "${promptText}". Gewerk-Kontext: ${state.selectedGewerk}`;
+
+      try {
+        const apiKey = ""; // Canvas runtime environment automatically inserts key
+        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
+
+        const payload = {
+          contents: [{ parts: [{ text: userQuery }] }],
+          systemInstruction: { parts: [{ text: systemPrompt }] }
+        };
+
+        const response = await fetch(apiUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        if (!response.ok) {
+          throw new Error("Fehler beim Abrufen der KI-Analyse.");
+        }
+
+        const data = await response.json();
+        const textResp = data.candidates?.[0]?.content?.parts?.[0]?.text;
+
+        if (textResp) {
+          // Clean possible JSON backticks if generated
+          const cleanedJson = textResp.replace(/```json/g, '').replace(/```/g, '').trim();
+          const parsed = JSON.parse(cleanedJson);
+
+          state.aiAnalysis = parsed;
+
+          // Apply AI estimates to inputs
+          if (parsed.estimatedHours) document.getElementById('inputHours').value = parsed.estimatedHours;
+          if (parsed.suggestedHourlyRate) document.getElementById('inputHourlyRate').value = parsed.suggestedHourlyRate;
+          if (parsed.estimatedMaterialCost) document.getElementById('inputMaterial').value = parsed.estimatedMaterialCost;
+          if (parsed.recommendedTravelCost) document.getElementById('inputTravel').value = parsed.recommendedTravelCost;
+
+          if (parsed.detailedProposalText) {
+            document.getElementById('offerTextPreview').value = parsed.detailedProposalText;
+            document.getElementById('printAiDetailsText').innerText = parsed.detailedProposalText;
+          }
+
+          calculateTotal();
+          showToast("KI-Kalkulation erfolgreich angewendet!", "success");
+        }
+      } catch (err) {
+        console.error(err);
+        showToast("KI-Anfrage konnte nicht verarbeitet werden. Bitte erneut versuchen.", "error");
+      } finally {
+        btn.disabled = false;
+        btnText.innerText = "KI-Kalkulation ausführen";
+      }
+    }
+
+    function openProModal() {
+      document.getElementById('proModal').classList.remove('hidden');
+    }
+
+    function closeProModal() {
+      document.getElementById('proModal').classList.add('hidden');
+    }
+
+    function applyPromoCode() {
+      const code = document.getElementById('promoCodeInput').value.trim().toUpperCase();
+      if (code === 'PRO2026' || code === 'DEMO') {
+        state.isPro = true;
+        updateProStatusUI();
+        closeProModal();
+        showToast("PRO-Version erfolgreich freigeschaltet!", "success");
+      } else {
+        showToast("Ungültiger Code. Nutze den Test-Code: PRO2026", "error");
+      }
+    }
+
+    function simulateStripeCheckout() {
+      showToast("Verbindung zu Stripe Checkout wird hergestellt...", "info");
+      setTimeout(() => {
+        state.isPro = true;
+        updateProStatusUI();
+        closeProModal();
+        showToast("Zahlung erfolgreich! PRO freigeschaltet.", "success");
+      }, 1500);
+    }
+
+    function updateProStatusUI() {
+      const badgeDot = document.getElementById('proBadgeDot');
+      const badgeText = document.getElementById('proBadgeText');
+      const upgradeBtn = document.getElementById('upgradeHeaderBtn');
+
+      if (state.isPro) {
+        badgeDot.className = "w-2 h-2 rounded-full bg-emerald-400 animate-pulse";
+        badgeText.innerText = "PRO Aktiviert";
+        upgradeBtn.innerHTML = `<i data-lucide="check" class="w-4 h-4"></i> <span>PRO Aktiv</span>`;
+        upgradeBtn.className = "flex items-center gap-2 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 font-semibold px-4 py-2 rounded-xl text-sm";
+      }
+    }
+
+    function triggerPrint() {
+      // Sync metadata
+      document.getElementById('printCompName').innerText = document.getElementById('compName').value || "Handwerkerbetrieb";
+      document.getElementById('printCustName').innerText = document.getElementById('custName').value || "Kunde";
+      document.getElementById('printCustAddr').innerText = document.getElementById('custAddr').value || "";
+      document.getElementById('printQuoteNum').innerText = document.getElementById('quoteNum').value || "ANG-001";
+      document.getElementById('printGewerkTitle').innerText = gewerkeData.find(g => g.id === state.selectedGewerk)?.name || "Arbeiten";
+
+      window.print();
+    }
+
+    function copyOfferText() {
+      const text = document.getElementById('offerTextPreview').value;
+      if (!text) return;
+
+      const textarea = document.createElement('textarea');
+      textarea.value = text;
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textarea);
+
+      showToast("Angebotstext in Zwischenablage kopiert!", "success");
+    }
+
+    function showToast(message, type = "info") {
+      const container = document.getElementById('toastContainer');
+      const toast = document.createElement('div');
+      
+      const colors = {
+        success: "bg-emerald-950 border-emerald-500/40 text-emerald-200",
+        error: "bg-rose-950 border-rose-500/40 text-rose-200",
+        info: "bg-slate-900 border-amber-500/40 text-slate-200"
+      };
+
+      toast.className = `px-4 py-3 rounded-xl border text-xs shadow-xl backdrop-blur transition-all duration-300 transform translate-y-2 pointer-events-auto flex items-center gap-2 ${colors[type] || colors.info}`;
+      toast.innerHTML = `<span>${message}</span>`;
+
+      container.appendChild(toast);
+
+      setTimeout(() => {
+        toast.classList.add('opacity-0', '-translate-y-2');
+        setTimeout(() => toast.remove(), 300);
+      }, 3500);
+    }
+  </script>
+</body>
+</html>
